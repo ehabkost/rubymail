@@ -85,9 +85,13 @@ module RMail
       # returns nil and #next must be called to begin reading from the
       # next message.  You can use #eof to tell if there is any more
       # data to be read from the input source.
+      # 
+      # If the input data didn't have a line terminator on the last line
+      # on a message, a terminator will be inserted.
       def read_chunk(size)
         chunk = read_chunk_low(size)
         if chunk
+          # save the last few (@sep.length) chars
           if chunk.length > @sep.length
             @tail = chunk[-@sep.length .. -1]
           else
@@ -95,6 +99,7 @@ module RMail
             @tail << chunk
           end
         elsif @tail
+          # EOF: insert a line separator on the last line, if it wasn't present
           if @tail[-@sep.length .. -1] != @sep
             chunk = @sep
           end
