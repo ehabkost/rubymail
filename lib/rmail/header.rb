@@ -615,8 +615,7 @@ module RMail
     # executed and its return value is returned.  If no block is
     # passed, the value of the +default+ argument is returned.
     def param(field_name, param_name, default = nil)
-      if field?(field_name)
-        params = params_quoted(field_name)
+      if params = params_quoted(field_name)
         value = params[param_name]
         return Utils.unquote(value) if value
       end
