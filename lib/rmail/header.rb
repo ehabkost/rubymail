@@ -608,6 +608,12 @@ module RMail
       end
     end
 
+    def Header.param(value, param_name)
+      params = params_quoted(value)
+      pvalue = params[param_name]
+      Utils.unquote(pvalue) if pvalue
+    end
+
     # This returns the parameter value for the given parameter in the
     # given field.  The value returned is unquoted.
     #
@@ -616,9 +622,10 @@ module RMail
     # executed and its return value is returned.  If no block is
     # passed, the value of the +default+ argument is returned.
     def param(field_name, param_name, default = nil)
-      if params = params_quoted(field_name)
-        value = params[param_name]
-        return Utils.unquote(value) if value
+      if value = self[field_name]
+        if pvalue = Header.param(value, param_name)
+          return pvalue
+        end
       end
       if block_given?
         yield field_name, param_name
