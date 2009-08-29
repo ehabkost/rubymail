@@ -127,6 +127,44 @@ module RMail
 
     end
 
+    # low level header parsing
+    #
+    # input must be a PushBackReader
+    #
+    # just yields field,name,value
+    # if a non-header line is found (such as "^From " lines,
+    # the yielded name and value will be nil
+    #
+    #FIXME: change it to not need a PushBackReader
+    def self.parse_low input
+      data = ''
+      header = ''
+      while chunk = input.read
+        data << chunk
+        if data[0] == ?\n
+          # A leading newline in the message is seen when parsing the
+          # parts of a multipart message.  It means there are no
+          # headers.  The body part starts directly after this
+          # newline.
+          rest = data[1..-1]
+        else
+          header, rest = data.split(/\n\n/, 2)
+        end
+        break if rest
+      end
+      input.pushback(rest)
+
+      fields = header.split(/\n(?!\s)/)
+      fields.each { |field|
+        if field =~ /^From /
+          yield field, nil, nil
+          next
+        end
+        name, value = RMail::Header::Field.parse(field)
+        yield field, name, value
+      }
+    end
+
     # Creates a new empty header object.
     def initialize()
       clear()

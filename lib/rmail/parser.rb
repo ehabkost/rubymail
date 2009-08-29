@@ -29,6 +29,7 @@
 
 require 'rmail/message'
 require 'rmail/parser/multipart'
+require 'rmail/parser/headers'
 
 module RMail
 
@@ -200,51 +201,26 @@ module RMail
     end
 
     def parse_header(input, depth)
-      data = nil
-      header = nil
       pushback = nil
       boundary = nil
-      while chunk = input.read
-        data ||= ''
-        data << chunk
-        if data[0] == ?\n
-          # A leading newline in the message is seen when parsing the
-          # parts of a multipart message.  It means there are no
-          # headers.  The body part starts directly after this
-          # newline.
-          rest = data[1..-1]
+      mime = false
+      Header.parse_low(input) { |field,name,value|
+        if field =~ /^From /
+          @handler.mbox_from(field)
         else
-          header, rest = data.split(/\n\n/, 2)
-        end
-        break if rest
-      end
-      input.pushback(rest)
-      if header
-        mime = false
-        fields = header.split(/\n(?!\s)/)
-        if fields.first =~ /^From /
-          @handler.mbox_from(fields.first)
-          fields.shift
-        end
-        fields.each { |field|
-          if field =~ /^From /
-            @handler.mbox_from(field)
-          else
-            name, value = RMail::Header::Field.parse(field)
-            case name.downcase
-            when 'mime-version'
-              if value =~ /\b1\.0\b/
-                mime = true
-              end
-            when 'content-type'
-              boundary = Header.param(value, 'boundary')
+          case name.downcase
+          when 'mime-version'
+            if value =~ /\b1\.0\b/
+              mime = true
             end
-            @handler.header_field(field, name, value)
+          when 'content-type'
+            boundary = Header.param(value, 'boundary')
           end
-        }
-        unless mime or depth > 0
-          boundary = nil
+          @handler.header_field(field, name, value)
         end
+      }
+      unless mime or depth > 0
+        boundary = nil
       end
       return boundary
     end
