@@ -237,11 +237,7 @@ module RMail
                 mime = true
               end
             when 'content-type'
-              # FIXME: would be nice to have a procedural equivalent
-              # to RMail::Header#param.
-              header = RMail::Header.new
-              header['content-type'] = value
-              boundary = header.param('content-type', 'boundary')
+              boundary = Header.param(value, 'boundary')
             end
             @handler.header_field(field, name, value)
           end
