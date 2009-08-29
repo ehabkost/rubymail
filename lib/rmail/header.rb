@@ -584,6 +584,13 @@ module RMail
       end
     end
 
+    def Header.params(value)
+      params = params_quoted(value)
+      params.each { |name, value|
+        params[name] = value ? Utils.unquote(value) : nil
+      }
+    end
+
     # This returns a hash of parameters.  Each key in the hash is the
     # name of the parameter in lower case and each value in the hash
     # is the unquoted parameter value.  If a parameter has no value,
@@ -594,16 +601,10 @@ module RMail
     # executed and its return value is returned.  If no block is
     # passed, the value of the +default+ argument is returned.
     def params(field_name, default = nil)
-      if params = params_quoted(field_name)
-        params.each { |name, value|
-          params[name] = value ? Utils.unquote(value) : nil
-        }
+      if value = self[field_name]
+        Header.params(value)
       else
-	if block_given?
-          yield field_name
-        else
-          default
-        end
+        if block_given? then yield field_name else default end
       end
     end
 
