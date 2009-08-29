@@ -935,27 +935,31 @@ module RMail
         [^=]+
     }x
 
-    def params_quoted(field_name, default = nil)
-      if value = self[field_name]
-        params = {}
-        first = true
-	value.scan(PARAM_SCAN_RE) do |param|
-          if param != ';'
-            unless first
-              name, value = param.scan(NAME_VALUE_SCAN_RE).collect do |p|
-                if p == '=' then nil else p end
-              end.compact
-              if name && (name = name.strip.downcase) && name.length > 0
-                params[name] = (value || '').strip
-              end
-            else
-              first = false
+    def Header.params_quoted(value)
+      params = {}
+      first = true
+      value.scan(PARAM_SCAN_RE) do |param|
+        if param != ';'
+          unless first
+            name, value = param.scan(NAME_VALUE_SCAN_RE).collect do |p|
+              if p == '=' then nil else p end
+            end.compact
+            if name && (name = name.strip.downcase) && name.length > 0
+              params[name] = (value || '').strip
             end
+          else
+            first = false
           end
         end
-        params
+      end
+      params
+    end
+
+    def params_quoted(field_name, default=nil)
+      if value = self[field_name]
+        Header.params_quoted(value)
       else
-	if block_given? then yield field_name else default end
+        if block_given? then yield field_name else default end
       end
     end
 
